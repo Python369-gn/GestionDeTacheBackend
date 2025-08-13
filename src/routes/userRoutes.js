@@ -11,4 +11,3 @@ router.put('/:id', auth, authorize('admin'), userController.updateUser);
 router.delete('/:id', auth, authorize('admin'), userController.deleteUser);
 
 module.exports = router;
-
