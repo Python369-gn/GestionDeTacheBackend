@@ -37,10 +37,15 @@ exports.getTasks = async (req, res) => {
   }
 };
 
+
 exports.getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id).populate('assignedTo', 'name email');
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
+    // Seul admin ou propriétaire de la tâche
+    if (req.user.role !== 'admin' && String(task.assignedTo?._id) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
     res.json(task);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -56,20 +61,33 @@ exports.createTask = async (req, res) => {
   }
 };
 
+
 exports.updateTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
+    // Seul admin ou propriétaire de la tâche
+    if (req.user.role !== 'admin' && String(task.assignedTo) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    Object.assign(task, req.body);
+    await task.save();
     res.json(task);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
 
+
 exports.deleteTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Tâche non trouvée' });
+    // Seul admin ou propriétaire de la tâche
+    if (req.user.role !== 'admin' && String(task.assignedTo) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    await task.deleteOne();
     res.json({ message: 'Supprimé' });
   } catch (err) {
     res.status(500).json({ message: err.message });
